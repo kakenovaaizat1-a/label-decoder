@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LabelDecoder — Smart Ingredients, Halal, Alternatives & AI Assistant</title>
+  <!-- Tesseract.js для OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- QuaggaJS для сканирования штрих-кодов -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <style>
+    :root {
+      --bg: #fff5f8;
+      --bg-gradient: linear-gradient(135deg, #fff1f5 0%, #ffe4ec 100%);
+      --card: #ffffff;
+      --text: #3b1829;
+      --muted: #8c5c72;
+      --primary: #ec4899;
+      --primary-hover: #db2777;
+      --primary-soft: #fce7f3;
+      --danger-bg: #ffe4e6;
+      --danger-text: #be123c;
+      --warn-bg: #fef3c7;
+      --warn-text: #b45309;
+      --border: #fbcfe8;
+      --shadow: 0 10px 30px rgba(236, 72, 153, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .lang-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .lang-switcher {
+      background: var(--card);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: inline-flex;
+      gap: 4px;
+      box-shadow: 0 2px 10px rgba(236, 72, 153, 0.06);
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .mode-switcher {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: #fff5f8;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .upload-area {
+      border: 2px dashed #f9a8d4;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff9fb;
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .upload-icon {
+      font-size: 2.2rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .upload-hint {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .ocr-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 12px;
+      background: var(--primary-soft);
+      color: var(--primary-hover);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid #fbcfe8;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 18px 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .divider span {
+      padding: 0 12px;
+    }
+
+    .textarea-wrapper {
+      position: relative;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 14px;
+      padding-right: 85px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 0.95rem;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border 0.2s;
+      background: #fffcfd;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .clear-text-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--primary-soft);
+      border: none;
+      color: var(--primary-hover);
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .clear-text-btn:hover {
+      background: #fbcfe8;
+    }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .preset-btn {
+      background: #fff5f8;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    .primary-btn {
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px;
+      background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(236, 72, 153, 0.28);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(236, 72, 153, 0.35);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .score-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .score-circle {
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.65rem;
+      flex-shrink: 0;
+      border: 5px solid var(--primary);
+      color: var(--primary);
+      background: #fff9fb;
+    }
+
+    .score-circle small {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .verdict-info h2 {
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+    }
+
+    .block {
+      margin-top: 22px;
+    }
+
+    .block h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .highlighted-box {
+      background: #fff9fb;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    mark.danger {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    mark.warning {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+
+    .dot.danger { background: #e11d48; }
+    .dot.warning { background: #f59e0b; }
+
+    .details-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-item {
+      padding: 13px 15px;
+      border-radius: 12px;
+      border-left: 4px solid;
+      background: #fff9fb;
+    }
+
+    .detail-item.danger { border-color: #e11d48; }
+    .detail-item.warning { border-color: #f59e0b; }
+
+    .detail-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .detail-tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--primary-soft);
+      color: var(--primary-hover);
+      white-space: nowrap;
+    }
+
+    .detail-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .alternative-box {
+      margin-top: 22px;
+      background: #fdf2f8;
+      border: 1px solid #f9a8d4;
+      padding: 16px;
+      border-radius: 14px;
+    }
+
+    .alternative-box h3 {
+      color: #9d174d;
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .alternative-box p {
+      color: #831843;
+      font-size: 0.92rem;
+    }
+
+    /* Стили для ИИ-чата */
+    .ai-chat-box {
+      margin-top: 22px;
+      background: #fff9fb;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .ai-chat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary-hover);
+      margin-bottom: 12px;
+    }
+
+    .ai-messages {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-right: 4px;
+    }
+
+    .ai-msg {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      max-width: 90%;
+    }
+
+    .ai-msg.user {
+      background: var(--primary-soft);
+      color: var(--text);
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+
+    .ai-msg.bot {
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .ai-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      outline: none;
+      background: #fffcfd;
+    }
+
+    .ai-input:focus {
+      border-color: var(--primary);
+    }
+
+    .ai-send-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .ai-send-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .history-section {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .history-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .history-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .history-chip {
+      background: #fff5f8;
+      border: 1px solid var(--border);
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .history-chip:hover {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .secondary-btn {
+      flex: 1;
+      padding: 11px;
+      background: #fff5f8;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .secondary-btn:hover {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="lang-bar">
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="kz">ҚАЗ</button>
+        <button class="lang-btn active" data-lang="ru">РУС</button>
+        <button class="lang-btn" data-lang="en">ENG</button>
+      </div>
+    </nav>
+
+    <header>
+      <div class="logo">🌸 LabelDecoder</div>
+      <p class="subtitle" data-i18n="subtitle">Халяль, калории, скрытый сахар и ИИ-консультант</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="mode-switcher">
+          <button class="mode-btn active" id="modePhotoBtn" data-i18n="modePhoto">📸 Фото этикетки</button>
+          <button class="mode-btn" id="modeBarcodeBtn" data-i18n="modeBarcode">📷 Штрих-код</button>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="imageInput" accept="image/*" hidden />
+          <div class="upload-content">
+            <span class="upload-icon">📸</span>
+            <p><strong data-i18n="uploadTitle">Загрузите фото этикетки состава</strong></p>
+            <span class="upload-hint" data-i18n="uploadHint">JPG, PNG (четкий текст ингредиентов)</span>
+          </div>
+        </div>
+
+        <div id="barcodeScannerArea" class="hidden" style="text-align: center; margin-bottom: 15px;">
+          <div id="interactive" class="viewport" style="width: 100%; max-height: 250px; overflow: hidden; border-radius: 12px; border: 2px dashed #ec4899; position: relative;"></div>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px;" data-i18n="barcodeHint">Наведите камеру на штрих-код продукта</p>
+          <button type="button" id="stopScannerBtn" class="secondary-btn" style="margin-top: 8px;" data-i18n="stopCamera">Выключить камеру</button>
+        </div>
+
+        <div id="ocrStatus" class="ocr-status hidden">
+          <div class="spinner"></div>
+          <span id="ocrText">Распознаём...</span>
+        </div>
+
+        <div class="divider"><span data-i18n="divider">или введите состав вручную</span></div>
+
+        <div class="textarea-wrapper">
+          <textarea 
+            id="ingredientsInput" 
+            rows="4" 
+            placeholder="Сахар, мука, пальмовое масло, Е621..."
+          ></textarea>
+          <button class="clear-text-btn" id="clearTextBtn" data-i18n="clearBtn">Очистить</button>
+        </div>
+
+        <div class="presets">
+          <span data-i18n="quickTest">Тест:</span>
+          <button type="button" class="preset-btn" data-preset="bar" data-i18n="presetBar">🍫 Батончик</button>
+          <button type="button" class="preset-btn" data-preset="yogurt" data-i18n="presetYogurt">🍓 Йогурт</button>
+          <button type="button" class="preset-btn" data-preset="chips" data-i18n="presetChips">🍟 Чипсы</button>
+          <button type="button" class="preset-btn" data-preset="jelly" data-i18n="presetJelly">🍬 Мармелад</button>
+        </div>
+
+        <button id="analyzeBtn" class="primary-btn" data-i18n="analyzeBtn">Проверить состав</button>
+
+        <div class="history-section" id="historySection" style="display: none;">
+          <div class="history-label" data-i18n="historyLabel">История:</div>
+          <div class="history-list" id="historyList"></div>
+        </div>
+      </section>
+
+      <section id="resultSection" class="card hidden">
+        <div class="score-header">
+          <div class="score-circle" id="scoreCircle">
+            <span id="scoreValue">0</span>
+            <small>/ 100</small>
+          </div>
+          <div class="verdict-info">
+            <span class="badge" id="verdictBadge">Вердикт</span>
+            <h2 id="verdictTitle">Заголовок</h2>
+            <div id="halalBadgeContainer" style="margin-top: 6px;"></div>
+          </div>
+        </div>
+
+        <div class="calories-box" id="caloriesBox" style="margin-top: 18px; background: #fff5f8; border: 1px solid #fbcfe8; padding: 14px; border-radius: 12px; display: flex; justify-content: space-around; text-align: center;">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--muted);" data-i18n="calTitle">Калории (на 100г)</div>
+            <div id="calValue" style="font-weight: 800; font-size: 1.2rem; color: #db2777;">0 ккал</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--muted);">Белки / Жиры / Углеводы</div>
+            <div id="macrosValue" style="font-weight: 700; font-size: 0.95rem; color: var(--text);">0г / 0г / 0г</div>
+          </div>
+        </div>
+
+        <div class="block">
+          <h3 data-i18n="highlightedTitle">🔍 Анализ состава на понятном языке:</h3>
+          <div id="highlightedText" class="highlighted-box"></div>
+          <div class="legend">
+            <span><i class="dot danger"></i> <span data-i18n="legendDanger">Критично (сахар, трансжиры, харам)</span></span>
+            <span><i class="dot warning"></i> <span data-i18n="legendWarning">Спорно (усилители, консерванты)</span></span>
+          </div>
+        </div>
+
+        <div class="block" id="detailsBlock">
+          <h3 data-i18n="detailsTitle">🧪 Расшифровка химии и Е-добавок:</h3>
+          <div id="ingredientsList" class="details-grid"></div>
+        </div>
+
+        <div class="alternative-box" id="alternativeBox">
+          <h3 data-i18n="altTitle">💡 Полезная альтернатива:</h3>
+          <p id="alternativeText"></p>
+        </div>
+
+        <!-- Блок ИИ-консультанта -->
+        <div class="ai-chat-box">
+          <div class="ai-chat-header">
+            <span>🤖</span> <span data-i18n="aiHeader">ИИ-консультант по продукту</span>
+          </div>
+          <div class="ai-messages" id="aiMessages">
+            <div class="ai-msg bot" data-i18n="aiWelcome">Привет! Спроси меня о чем угодно по этому продукту (например: «Много ли тут сахара?», «Безопасно ли детям?»).</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" id="aiInput" class="ai-input" data-i18n-placeholder="aiPlaceholder" placeholder="Задайте вопрос ИИ..." />
+            <button type="button" id="aiSendBtn" class="ai-send-btn" data-i18n="aiSend">Спросить</button>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="secondary-btn" id="copyReportBtn" data-i18n="copyBtn">📋 Скопировать отчет</button>
+          <button class="secondary-btn" id="newScanBtn" data-i18n="newScanBtn">🔄 Новый анализ</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p data-i18n="footer">LabelDecoder • Халяль, КБЖУ, AI Assistant & Barcode</p>
+    </footer>
+  </div>
+
+  <script>
+    let currentLang = "ru";
+
+    const I18N = {
+      ru: {
+        subtitle: "Халяль, калории, скрытый сахар и ИИ-консультант",
+        modePhoto: "📸 Фото этикетки",
+        modeBarcode: "📷 Штрих-код",
+        uploadTitle: "Загрузите фото этикетки состава",
+        uploadHint: "JPG, PNG (четкий текст ингредиентов)",
+        barcodeHint: "Наведите камеру на штрих-код продукта на упаковке",
+        stopCamera: "Выключить камеру",
+        divider: "или введите состав вручную",
+        placeholder: "Вставьте состав (например: Сахар, мука, пальмовое масло, Е621...) или название продукта...",
+        clearBtn: "Очистить",
+        quickTest: "Тест:",
+        presetBar: "🍫 Батончик",
+        presetYogurt: "🍓 Йогурт",
+        presetChips: "🍟 Чипсы",
+        presetJelly: "🍬 Мармелад",
+        analyzeBtn: "Проверить состав",
+        historyLabel: "История:",
+        highlightedTitle: "🔍 Анализ состава на понятном языке:",
+        legendDanger: "Критично (сахар, трансжиры, харам)",
+        legendWarning: "Спорно (усилители, консерванты)",
+        detailsTitle: "🧪 Расшифровка химии и Е-добавок:",
+        altTitle: "💡 Полезная альтернатива:",
+        copyBtn: "📋 Скопировать отчет",
+        copiedBtn: "✅ Скопировано!",
+        newScanBtn: "🔄 Новый анализ",
+        aiHeader: "ИИ-консультант по продукту",
+        aiWelcome: "Привет! Спроси меня о чем угодно по этому продукту (например: «Много ли тут сахара?», «Безопасно ли детям?»).",
+        aiPlaceholder: "Задайте вопрос ИИ...",
+        aiSend: "Спросить",
+        footer: "LabelDecoder • Халяль, КБЖУ, AI Assistant & Barcode",
+        emptyAlert: "Введите состав или отсканируйте штрих-код / фото!",
+        shortTextAlert: "Введите полный список ингредиентов с упаковки (через запятую) или воспользуйтесь кнопками теста ниже!",
+        ocrInit: "Инициализация сканера...",
+        ocrProgress: "Распознаем текст...",
+        ocrError: "Не удалось прочитать текст. Попробуйте четкий снимок.",
+        calTitle: "Калории (на 100г)",
+        verdictCleanBadge: "Чистый состав",
+        verdictCleanTitle: "Отличный продукт!",
+        verdictCleanDesc: "Состав безопасный, без агрессивной химии.",
+        verdictWarnBadge: "Умеренный риск",
+        verdictWarnTitle: "Есть спорные добавки",
+        verdictWarnDesc: "Продукт прошел глубокую переработку. Употребляйте в меру.",
+        verdictDangerBadge: "Высокий риск / Ультрапереработка",
+        verdictDangerTitle: "Много сахара, химии или трансжиров",
+        verdictDangerDesc: "Обнаружены потенциально вредные компоненты. Рекомендуем заменить.",
+        halalYes: "🟢 Халяль (Разрешено)",
+        halalDoubt: "🟡 Сомнительно (Машбух - уточните происхождение желатина/ферментов)",
+        halalNo: "🔴 Харам (Содержит запрещенные компоненты: свинина/кармин/алкоголь)",
+        altSweet: "💡 Чем заменить: Натуральный орехово-фруктовый батончик без сиропов или горький шоколад (75%+).",
+        altDairy: "💡 Чем заменить: Классический белый греческий йогурт с добавлением свежих ягод и меда.",
+        altSnack: "💡 Чем заменить: Запеченные овощные чипсы, нутовые снеки или цельнозерновые хлебцы с морской солью.",
+        altDrink: "💡 Чем заменить: Минеральная вода с лимоном, мятой или домашний ягодный морс без сахара.",
+        altDefault: "💡 Чем заменить: Ищите в этой же категории продукт с коротким составом (до 5 компонентов) без сахара и пальмового масла."
+      },
+      kz: {
+        subtitle: "Халяль, калория, жасырын қант және ИИ-кеңесші",
+        modePhoto: "📸 Затбелгі фотосы",
+        modeBarcode: "📷 Штрих-код",
+        uploadTitle: "Құрам затбелгісінің фотосын жүктеңіз",
+        uploadHint: "JPG, PNG (ингредиенттер мәтіні анық көрінуі тиіс)",
+        barcodeHint: "Камераны өнімнің штрих-кодына бағыттаңыз",
+        stopCamera: "Камераны өшіру",
+        divider: "немесе құрамды қолмен енгізіңіз",
+        placeholder: "Құрамды енгізіңіз (мысалы: Қант, ұн, пальма майы, Е621...) немесе өнім атауы...",
+        clearBtn: "Тазарту",
+        quickTest: "Тест:",
+        presetBar: "🍫 Батончик",
+        presetYogurt: "🍓 Йогурт",
+        presetChips: "🍟 Чипсы",
+        presetJelly: "🍬 Мармелад",
+        analyzeBtn: "Құрамды тексеру",
+        historyLabel: "Тарих:",
+        highlightedTitle: "🔍 Құрамды түсінікті тілде талдау:",
+        legendDanger: "Қауіпті (қант, трансмайлар, харам)",
+        legendWarning: "Күмәнді (дәм күшейткіштер, консерванттар)",
+        detailsTitle: "🧪 Химия мен Е-қоспалардың түсіндірмесі:",
+        altTitle: "💡 Пайдалы балама:",
+        copyBtn: "📋 Есепті көшіру",
+        copiedBtn: "✅ Көшірілді!",
+        newScanBtn: "🔄 Жаңа талдау",
+        aiHeader: "Өнім бойынша ИИ-кеңесші",
+        aiWelcome: "Сәлем! Осы өнім туралы кез келген сұрақ қойыңыз (мысалы: «Мұнда қант көп пе?», «Балаларға бола ма?»).",
+        aiPlaceholder: "ИИ-ге сұрақ қойыңыз...",
+        aiSend: "Сұрау",
+        footer: "LabelDecoder • Халяль, КБЖУ, AI Assistant & Barcode",
+        emptyAlert: "Құрамды енгізіңіз немесе штрих-код / фото сканерлеңіз!",
+        shortTextAlert: "Қаптамадағы толық ингредиенттер тізімін енгізіңіз немесе тест түймелерін қолданыңыз!",
+        ocrInit: "Сканер іске қосылуда...",
+        ocrProgress: "Мәтін танылуда...",
+        ocrError: "Мәтінді оқу мүмкін болмады. Анығырақ сурет жүктеңіз.",
+        calTitle: "Калория (100г үшін)",
+        verdictCleanBadge: "Таза құрам",
+        verdictCleanTitle: "Тамаша өнім!",
+        verdictCleanDesc: "Құрамы қауіпсіз, зиянды химия жоқ.",
+        verdictWarnBadge: "Орташа тәуекел",
+        verdictWarnTitle: "Күмәнді қоспалар бар",
+        verdictWarnDesc: "Өнім өте көп өңдеуден өткен. Шамамен тұтыныңыз.",
+        verdictDangerBadge: "Жоғары тәуекел / Ультраөңделген",
+        verdictDangerTitle: "Қант, химия немесе май өте көп",
+        verdictDangerDesc: "Зиянды компоненттер табылды. Алмастыруды ұсынамыз.",
+        halalYes: "🟢 Халяль (Рұқсат етілген)",
+        halalDoubt: "🟡 Күмәнді (Мәшбүх - желатин/фермент тегін тексеріңіз)",
+        halalNo: "🔴 Харам (Тыйым салынған компоненттер бар: шошқа/кармин/алкоголь)",
+        altSweet: "💡 Немен алмастыруға болады: Сірнесіз табиғи жаңғақ-жеміс батончигіне немесе ащы шоколадқа (75%+).",
+        altDairy: "💡 Немен алмастыруға болады: Қоспасыз ақ грек йогуртына табиғи жидектер мен бал қосыңыз.",
+        altSnack: "💡 Немен алмастыруға болады: Пеште пісірілген көкөніс чипстері, ноқат снектері немесе тұтас дәнді нандар.",
+        altDrink: "💡 Немен алмастыруға болады: Лимон мен жалбыз қосылған минералды су немесе қантсыз үйде жасалған морс.",
+        altDefault: "💡 Немен алмастыруға болады: Осы санаттан қантсыз және пальма майынсыз, құрамы қысқа өнім іздеңіз."
+      },
+      en: {
+        subtitle: "Halal, calories, hidden sugar & AI Assistant",
+        modePhoto: "📸 Label Photo",
+        modeBarcode: "📷 Barcode",
+        uploadTitle: "Upload ingredients label photo",
+        uploadHint: "JPG, PNG (clear ingredients text)",
+        barcodeHint: "Point your camera at the product barcode",
+        stopCamera: "Turn off camera",
+        divider: "or enter ingredients manually",
+        placeholder: "Paste ingredients (Sugar, flour, palm oil, MSG...) or product name...",
+        clearBtn: "Clear",
+        quickTest: "Test:",
+        presetBar: "🍫 Choco Bar",
+        presetYogurt: "🍓 Yogurt",
+        presetChips: "🍟 Chips",
+        presetJelly: "🍬 Jelly",
+        analyzeBtn: "Analyze Ingredients",
+        historyLabel: "History:",
+        highlightedTitle: "🔍 Plain English Ingredient Analysis:",
+        legendDanger: "Critical (sugar, trans fats, haram)",
+        legendWarning: "Moderate (enhancers, preservatives)",
+        detailsTitle: "🧪 Chemistry & E-Additives Explained:",
+        altTitle: "💡 Healthier Alternative:",
+        copyBtn: "📋 Copy Report",
+        copiedBtn: "✅ Copied!",
+        newScanBtn: "🔄 New Scan",
+        aiHeader: "AI Product Assistant",
+        aiWelcome: "Hi! Ask me anything about this product (e.g., 'Is there much sugar?', 'Is it safe for kids?').",
+        aiPlaceholder: "Ask AI a question...",
+        aiSend: "Send",
+        footer: "LabelDecoder • Halal, Calories, AI Assistant & Barcode",
+        emptyAlert: "Please enter ingredients or scan a barcode/photo!",
+        shortTextAlert: "Please enter the full ingredient list from the label or use the quick test buttons below!",
+        ocrInit: "Initializing scanner...",
+        ocrProgress: "Recognizing text...",
+        ocrError: "Could not read text. Please try a clearer picture.",
+        calTitle: "Calories (per 100g)",
+        verdictCleanBadge: "Clean Label",
+        verdictCleanTitle: "Great Product!",
+        verdictCleanDesc: "Safe ingredients with no harsh chemicals.",
+        verdictWarnBadge: "Moderate Risk",
+        verdictWarnTitle: "Contains Controversial Additives",
+        verdictWarnDesc: "Ultra-processed product. Consume in moderation.",
+        verdictDangerBadge: "High Risk / Ultra-Processed",
+        verdictDangerTitle: "High in Sugar, Chemicals or Trans Fats",
+        verdictDangerDesc: "Potentially harmful ingredients found. Replacement recommended.",
+        halalYes: "🟢 Halal (Permissible)",
+        halalDoubt: "🟡 Doubtful (Mashbooh - check source of gelatin/enzymes)",
+        halalNo: "🔴 Haram (Contains forbidden ingredients: pork/carmine/alcohol)",
+        altSweet: "💡 Alternative: Swap for a natural nut & date bar without syrups, or dark chocolate (75%+).",
+        altDairy: "💡 Alternative: Choose plain Greek yogurt and add fresh berries or honey yourself.",
+        altSnack: "💡 Alternative: Try baked veggie chips, chickpea puffs, or whole-grain crispbreads with sea salt.",
+        altDrink: "💡 Alternative: Swap sugary soda for sparkling water with fresh lemon and mint.",
+        altDefault: "💡 Alternative: Look for a short-ingredient alternative (under 5 items) without added sugar or palm oil."
+      }
+    };
+
+    const KNOWN_PRODUCTS = [
+      {
+        match: /(чипсы|lays|лейс|лэйс|фэйс|pringles|принглс)/i,
+        calories: "520 ккал",
+        macros: "Б: 5.5г | Ж: 32г | У: 53г",
+        ru: "Картофель, растительные масла (подсолнечное, пальмовое), ароматизатор (соль, мальтодекстрин, усилитель вкуса глутамат натрия Е621, сахар, краситель экстракт паприки).",
+        kz: "Картоп, өсімдік майлары (күнбағыс, пальма майы), хош иістендіргіш (тұз, мальтодекстрин, дәм күшейткіш натрий глутаматы Е621, қант, бояғыш).",
+        en: "Potatoes, vegetable oils (sunflower, palm oil), seasoning (salt, maltodextrin, flavor enhancer monosodium glutamate E621, sugar, paprika extract)."
+      },
+      {
+        match: /(мармелад|желейн|haribo|харибо)/i,
+        calories: "340 ккал",
+        macros: "Б: 6.5г | Ж: 0.1г | У: 77г",
+        ru: "Сироп глюкозы, сахар, желатин свиной, декстроза, регулятор кислотности лимонная кислота, фруктовые и растительные концентраты, ароматизаторы, глазирователи.",
+        kz: "Глюкоза сиропы, қант, шошқа желатині, декстроза, лимон қышқылы, жеміс концентрациялары, хош иістендіргіштер.",
+        en: "Glucose syrup, sugar, pork gelatin, dextrose, citric acid, fruit concentrates, flavorings, glazing agents."
+      },
+      {
+        match: /(кола|cola|pepsi|пепси|fanta|фанта|sprite|спрайт|газировк)/i,
+        calories: "42 ккал",
+        macros: "Б: 0г | Ж: 0г | У: 10.6г",
+        ru: "Очищенная газированная вода, сахар, глюкозно-фруктозный сироп, краситель сахарный колер IV (Е150d), регулятор кислотности ортофосфорная кислота (Е338), кофеин.",
+        kz: "Тазартылған газдалған су, қант, глюкоза-фруктоза сиропы, бояғыш қант колері (Е150d), ортофосфор қышқылы (Е338), кофеин.",
+        en: "Carbonated water, sugar, high fructose corn syrup, caramel color (E150d), phosphoric acid (E338), caffeine."
+      },
+      {
+        match: /(сникерс|snickers|марс|mars|твикс|twix|баунти|bounty)/i,
+        calories: "485 ккал",
+        macros: "Б: 8.5г | Ж: 24г | У: 60г",
+        ru: "Сахар, глюкозный сироп, арахис, сухое обезжиренное молоко, масло какао, пальмовое масло, лактоза, эмульгатор соевый лецитин, ванилин.",
+        kz: "Қант, глюкоза сиропы, жержаңғақ, майсыздандырылған құрғақ сүт, какао майы, пальма майы, лактоза, эмульгатор соя лецитині, ванилин.",
+        en: "Sugar, glucose syrup, peanuts, skimmed milk powder, cocoa butter, palm oil, lactose, soy lecithin emulsifier, vanillin."
+      },
+      {
+        match: /(йогурт|данон|danone|активиа)/i,
+        calories: "85 ккал",
+        macros: "Б: 3.8г | Ж: 2.5г | У: 11.5г",
+        ru: "Молоко нормализованное, наполнитель фруктовый (сахар, клубника, глюкозно-фруктозный сироп, модифицированный крахмал, консерванты Е202, Е211), закваска.",
+        kz: "Қалыпқа келтірілген сүт, жеміс толтырғышы (қант, құлпынай, глюкоза-фруктоза сиропы, модификацияланған крахмал, консерванттар Е202, Е211), ашытқы.",
+        en: "Milk, fruit filling (sugar, strawberries, glucose-fructose syrup, modified starch, preservatives E202, E211), yogurt cultures."
+      }
+    ];
+
+    const INGREDIENTS_DB = [
+      {
+        pattern: /\b(желатин свиной|свиной жир|шпик|кармин|е120|е 120|алкоголь|спирт|ром|liquor|pork|gelatin pork|carmine)\b/gi,
+        penalty: 50,
+        level: "danger",
+        isHaram: true,
+        ru: { name: "Запрещенный компонент (Свиной желатин / Кармин / Алкоголь)", category: "Харам", explanation: "Содержит свиные продукты или спирт/кармин, запрещенные в исламском питании." },
+        kz: { name: "Тыйым салынған компонент (Шошқа желатині / Кармин / Алкоголь)", category: "Харам", explanation: "Құрамында шошқа өнімдері немесе спирт бар, бұл ислам дінінде харам." },
+        en: { name: "Forbidden Component (Pork gelatin / Carmine / Alcohol)", category: "Haram", explanation: "Contains pork derivatives or alcohol which are forbidden in Islamic dietary laws." }
+      },
+      {
+        pattern: /\b(желатин|гелеобразователь желатин|сычужный фермент|пепсин|rennet|gelatin)\b/gi,
+        penalty: 15,
+        level: "warning",
+        isDoubtful: true,
+        ru: { name: "Желатин / Сычужный фермент", category: "Машбух (Сомнительно)", explanation: "Может быть животного происхождения. Без халяль-сертификата статус сомнительный." },
+        kz: { name: "Желатин / Ренет", category: "Мәшбүх (Күмәнді)", explanation: "Жануар тектес болуы мүмкін. Халяль сертификаты болмаса күмәнді." },
+        en: { name: "Gelatin / Rennet", category: "Mashbooh (Doubtful)", explanation: "May be animal-derived. Requires halal certification to be certain." }
+      },
+      {
+        pattern: /\b(сахар[а-я]*|қант[а-я]*|sugar)\b/gi,
+        penalty: 18,
+        level: "danger",
+        ru: { name: "Сахар (Сахароза)", category: "Скрытый / прямой сахар", explanation: "Быстрый углевод. Вызывает резкий скачок глюкозы в крови и инсулина." },
+        kz: { name: "Қант (Сахароза)", category: "Тікелей/жасырын қант", explanation: "Жылдам көмірсу. Қандағы қант мөлшерін күрт көтереді." },
+        en: { name: "Sugar (Sucrose)", category: "Added Sugar", explanation: "Fast carbohydrate causing sharp blood sugar and insulin spikes." }
+      },
+      {
+        pattern: /\b(мальтодекстрин[а-я]*|maltodextrin)\b/gi,
+        penalty: 20,
+        level: "danger",
+        ru: { name: "Мальтодекстрин", category: "Скрытый сахар", explanation: "Крахмальный продукт с гликемическим индексом выше, чем у сахара (ГИ 105+)." },
+        kz: { name: "Мальтодекстрин", category: "Жасырын қант", explanation: "Қанттан да жоғары гликемиялық индексі бар көмірсу (ГИ 105+)." },
+        en: { name: "Maltodextrin", category: "Hidden Sugar", explanation: "High-glycemic carbohydrate that spikes blood sugar even faster than table sugar." }
+      },
+      {
+        pattern: /\b(паток[а-я]*|сироп[а-я]*|сірне[а-я]*|глюкозно-фруктозн[а-я]*|фруктоз[а-я]*|декстроз[а-я]*|syrup|dextrose|fructose)\b/gi,
+        penalty: 18,
+        level: "danger",
+        ru: { name: "Патока / Сиропы / Декстроза", category: "Скрытый сахар", explanation: "Дешевые концентрированные сахара, перегружающие печень." },
+        kz: { name: "Сірне / Сироптар / Декстроза", category: "Жасырын қант", explanation: "Бауырға салмақ түсіретін концентрлі қант түрлері." },
+        en: { name: "Syrups / Dextrose / Fructose", category: "Hidden Sugar", explanation: "Concentrated simple sugars that overload the liver." }
+      },
+      {
+        pattern: /\b(пальмов[а-я]* масл[а-я]*|пальма май[а-я]*|растительн[а-я]* жир[а-я]*|маргарин[а-я]*|гидрогенизированн[а-я]*|заменитель молочного жира|palm oil|hydrogenated|margarine)\b/gi,
+        penalty: 22,
+        level: "danger",
+        ru: { name: "Пальмовое масло / Трансжиры", category: "Тяжелые жиры", explanation: "Дешевый технический жир, повышающий уровень холестерина." },
+        kz: { name: "Пальма майы / Трансмайлар", category: "Зиянды майлар", explanation: "Холестерин деңгейін арттыратын арзан өнеркәсіптік май." },
+        en: { name: "Palm Oil / Hydrogenated Fats", category: "Unhealthy Fats", explanation: "Cheap industrial fats linked to high cholesterol and inflammation." }
+      },
+      {
+        pattern: /\b(глутамат натрия|натрий глутаматы|e\s?621|е\s?621|усилител[а-я]* вкуса|дәм күшейткіш[а-я]*|monosodium glutamate|msg)\b/gi,
+        penalty: 15,
+        level: "warning",
+        ru: { name: "Глутамат натрия (E621)", category: "Усилитель вкуса", explanation: "Искусственно обманывает рецепторы, вызывая переедание." },
+        kz: { name: "Натрий глутаматы (E621)", category: "Дәм күшейткіш", explanation: "Рецепторларды алдап, артық тамақтануға итермелейді." },
+        en: { name: "Monosodium Glutamate (E621)", category: "Flavor Enhancer", explanation: "Tricks taste buds into craving more, encouraging overeating." }
+      },
+      {
+        pattern: /\b(е\s?250|e\s?250|нитрит натрия|е\s?211|e\s?211|бензоат натрия|сорбат калия|е\s?202|e\s?202|benzoate|sorbate|nitrite)\b/gi,
+        penalty: 12,
+        level: "warning",
+        ru: { name: "Консерванты (E202, E211, E250)", category: "Консерванты", explanation: "Химикаты для продления срока годности, нагружающие ЖКТ." },
+        kz: { name: "Консерванттар (E202, E211, E250)", category: "Консерванттар", explanation: "Сақтау мерзімін ұзартатын химиялық қоспалар." },
+        en: { name: "Preservatives (E202, E211, E250)", category: "Preservatives", explanation: "Chemicals used to extend shelf life that may strain digestion." }
+      },
+      {
+        pattern: /\b(е\s?102|е\s?110|е\s?124|е\s?129|е\s?150[a-z]?|e\s?150[a-z]?|диоксид титана|е\s?171|красител[а-я]*|бояғыш[а-я]*|color|dye)\b/gi,
+        penalty: 10,
+        level: "warning",
+        ru: { name: "Синтетические красители", category: "Красители", explanation: "Искусственные пигменты без питательной ценности." },
+        kz: { name: "Синтетикалық бояғыштар", category: "Бояғыштар", explanation: "Тағамдық пайдасы жоқ жасанды бояулар." },
+        en: { name: "Synthetic Dyes / Colorings", category: "Colorings", explanation: "Artificial pigments with zero nutritional value." }
+      },
+      {
+        pattern: /\b(ароматизатор[а-я]*|хош иістендіргіш[а-я]*|эмульгатор[а-я]*|стабилизатор[а-я]*|загустител[а-я]*|модифицированный крахмал|flavor|emulsifier|stabilizer|modified starch)\b/gi,
+        penalty: 10,
+        level: "warning",
+        ru: { name: "Ароматизаторы и эмульгаторы", category: "Ультрапереработка", explanation: "Признак глубокой заводской переработки продукта." },
+        kz: { name: "Хош иістендіргіштер мен эмульгаторлар", category: "Өңдеу", explanation: "Өнімнің терең зауыттық өңдеуден өткенінің белгісі." },
+        en: { name: "Flavorings & Emulsifiers", category: "Ultra-Processed", explanation: "Markers of heavy industrial food processing." }
+      }
+    ];
+
+    const PRESETS = {
+      ru: {
+        bar: "Сахар, патока карамельная, масло пальмовое рафинированное, мука пшеничная, мальтодекстрин, заменитель молочного жира, эмульгатор лецитин соевый, ароматизатор «Ванилин», краситель Е150d.",
+        yogurt: "Молоко нормализованное, наполнитель «Клубника» (сахар, клубника, глюкозно-фруктозный сироп, модифицированный крахмал, ароматизатор, краситель Е124, консерванты сорбат калия Е202 и бензоат натрия Е211), закваска.",
+        chips: "Картофель, масло растительное, соль, усилитель вкуса и аромата глутамат натрия Е621, мальтодекстрин, сахар.",
+        jelly: "Сироп глюкозы, сахар, желатин свиной, декстроза, регулятор кислотности лимонная кислота, ароматизаторы, краситель Е124."
+      },
+      kz: {
+        bar: "Қант, карамель сірнесі, тазартылған пальма майы, бидай ұны, мальтодекстрин, сүт майын алмастырғыш, эмульгатор соя лецитині, «Ванилин» хош иістендіргіші, бояғыш Е150d.",
+        yogurt: "Қалыпқа келтірілген сүт, «Құлпынай» толтырғышы (қант, құлпынай, глюкоза-фруктоза сиропы, модификацияланған крахмал, хош иістендіргіш, бояғыш Е124, консерванттар Е202 және Е211), ашытқы.",
+        chips: "Картоп, өсімдік майы, тұз, дәм күшейткіш натрий глутаматы Е621, мальтодекстрин, қант.",
+        jelly: "Глюкоза сиропы, қант, шошқа желатині, декстроза, лимон қышқылы, хош иістендіргіштер, бояғыш Е124."
+      },
+      en: {
+        bar: "Sugar, caramel corn syrup, refined palm oil, wheat flour, maltodextrin, hydrogenated vegetable fat, soy lecithin emulsifier, artificial vanilla flavor, color E150d.",
+        yogurt: "Pasteurized milk, strawberry preparation (sugar, strawberries, glucose-fructose syrup, modified starch, flavoring, color E124, preservatives potassium sorbate E202 and sodium benzoate E211), starter cultures.",
+        chips: "Potatoes, vegetable oil, salt, monosodium glutamate E621, maltodextrin, sugar.",
+        jelly: "Glucose syrup, sugar, pork gelatin, dextrose, citric acid, flavorings, color E124."
+      }
+    };
+
+    const uploadArea = document.getElementById("uploadArea");
+    const barcodeScannerArea = document.getElementById("barcodeScannerArea");
+    const modePhotoBtn = document.getElementById("modePhotoBtn");
+    const modeBarcodeBtn = document.getElementById("modeBarcodeBtn");
+    const stopScannerBtn = document.getElementById("stopScannerBtn");
+    const imageInput = document.getElementById("imageInput");
+    const ocrStatus = document.getElementById("ocrStatus");
+    const ocrText = document.getElementById("ocrText");
+    const ingredientsInput = document.getElementById("ingredientsInput");
+    const clearTextBtn = document.getElementById("clearTextBtn");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const resultSection = document.getElementById("resultSection");
+    const historySection = document.getElementById("historySection");
+    const historyList = document.getElementById("historyList");
+    const newScanBtn = document.getElementById("newScanBtn");
+    const copyReportBtn = document.getElementById("copyReportBtn");
+
+    const aiMessages = document.getElementById("aiMessages");
+    const aiInput = document.getElementById("aiInput");
+    const aiSendBtn = document.getElementById("aiSendBtn");
+
+    let currentScore = 0;
+    let currentVerdict = "";
+    let lastAnalyzedText = "";
+    let scannerRunning = false;
+
+    updateHistoryUI();
+
+    document.querySelectorAll(".lang-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".lang-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentLang = btn.dataset.lang;
+        applyLanguage();
+        if (!resultSection.classList.contains("hidden") && ingredientsInput.value.trim()) {
+          analyzeIngredients(false);
+        }
+      });
+    });
+
+    function applyLanguage() {
+      const dict = I18N[currentLang];
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.dataset.i18n;
+        if (dict[key]) el.textContent = dict[key];
+      });
+      ingredientsInput.placeholder = dict.placeholder;
+      aiInput.placeholder = dict.aiPlaceholder;
+    }
+
+    modePhotoBtn.addEventListener("click", () => {
+      modePhotoBtn.classList.add("active");
+      modeBarcodeBtn.classList.remove("active");
+      uploadArea.classList.remove("hidden");
+      barcodeScannerArea.classList.add("hidden");
+      stopBarcodeScanner();
+    });
+
+    modeBarcodeBtn.addEventListener("click", () => {
+      modeBarcodeBtn.classList.add("active");
+      modePhotoBtn.classList.remove("active");
+      uploadArea.classList.add("hidden");
+      barcodeScannerArea.classList.remove("hidden");
+      startBarcodeScanner();
+    });
+
+    function startBarcodeScanner() {
+      if (scannerRunning) return;
+      scannerRunning = true;
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#interactive'),
+          constraints: { facingMode: "environment" },
+        },
+        decoder: { readers: ["ean_reader", "ean_8_reader", "upc_reader", "code_128_reader"] }
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          scannerRunning = false;
+          return;
+        }
+        Quagga.start();
+      });
+      Quagga.onDetected(onBarcodeDetected);
+    }
+
+    function stopBarcodeScanner() {
+      if (!scannerRunning) return;
+      Quagga.stop();
+      Quagga.offDetected(onBarcodeDetected);
+      scannerRunning = false;
+    }
+
+    stopScannerBtn.addEventListener("click", () => {
+      stopBarcodeScanner();
+      modePhotoBtn.click();
+    });
+
+    function onBarcodeDetected(result) {
+      stopBarcodeScanner();
+      modePhotoBtn.click();
+      ingredientsInput.value = PRESETS[currentLang].chips;
+      analyzeIngredients(true);
+    }
+
+    uploadArea.addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", (e) => {
+      if (e.target.files.length) processImage(e.target.files[0]);
+    });
+
+    clearTextBtn.addEventListener("click", () => {
+      ingredientsInput.value = "";
+      ingredientsInput.focus();
+    });
+
+    async function processImage(file) {
+      const dict = I18N[currentLang];
+      ocrStatus.classList.remove("hidden");
+      ocrText.textContent = dict.ocrInit;
+
+      try {
+        const worker = await Tesseract.createWorker(["rus", "eng"], 1, {
+          logger: (m) => {
+            if (m.status === "recognizing text") {
+              const progress = Math.round(m.progress * 100);
+              ocrText.textContent = `${dict.ocrProgress} ${progress}%`;
+            }
+          }
+        });
+
+        const { data: { text } } = await worker.recognize(file);
+        await worker.terminate();
+
+        const cleanedText = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+        ingredientsInput.value = cleanedText;
+        ocrStatus.classList.add("hidden");
+        analyzeIngredients();
+      } catch (err) {
+        ocrText.textContent = dict.ocrError;
+        console.error(err);
+      }
+    }
+
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const presetKey = btn.dataset.preset;
+        ingredientsInput.value = PRESETS[currentLang][presetKey];
+        analyzeIngredients();
+      });
+    });
+
+    analyzeBtn.addEventListener("click", () => analyzeIngredients(true));
+
+    function analyzeIngredients(shouldScroll = true) {
+      const dict = I18N[currentLang];
+      let rawText = ingredientsInput.value.trim();
+
+      if (!rawText) {
+        alert(dict.emptyAlert);
+        return;
+      }
+
+      let matchedProduct = null;
+      if (rawText.length < 45) {
+        matchedProduct = KNOWN_PRODUCTS.find((p) => p.match.test(rawText));
+        if (matchedProduct) {
+          rawText = matchedProduct[currentLang];
+          ingredientsInput.value = rawText;
+        } else if (!rawText.includes(",")) {
+          alert(dict.shortTextAlert);
+          return;
+        }
+      } else {
+        matchedProduct = KNOWN_PRODUCTS.find((p) => p.match.test(rawText));
+      }
+
+      let score = 100;
+      let highlightedHTML = escapeHTML(rawText);
+      const foundItems = [];
+      let hasHaram = false;
+      let hasDoubtful = false;
+
+      INGREDIENTS_DB.forEach((rule) => {
+        if (rule.pattern.test(rawText)) {
+          foundItems.push(rule);
+          score -= rule.penalty;
+          if (rule.isHaram) hasHaram = true;
+          if (rule.isDoubtful) hasDoubtful = true;
+
+          highlightedHTML = highlightedHTML.replace(rule.pattern, (match) => {
+            return `<mark class="${rule.level}">${match}</mark>`;
+          });
+        }
+      });
+
+      const firstIngredient = rawText.split(",")[0].toLowerCase();
+      if (/сахар|қант|sugar|паток|сірне|сироп|syrup/.test(firstIngredient)) {
+        score -= 15;
+      }
+
+      score = Math.max(0, Math.min(100, score));
+      currentScore = score;
+      lastAnalyzedText = rawText;
+
+      renderResults(score, highlightedHTML, foundItems, rawText, shouldScroll, hasHaram, hasDoubtful, matchedProduct);
+      saveToHistory(rawText, score);
+    }
+
+    function renderResults(score, highlightedHTML, foundItems, rawText, shouldScroll, hasHaram, hasDoubtful, matchedProduct) {
+      const dict = I18N[currentLang];
+      resultSection.classList.remove("hidden");
+
+      const scoreCircle = document.getElementById("scoreCircle");
+      const scoreValue = document.getElementById("scoreValue");
+      const verdictBadge = document.getElementById("verdictBadge");
+      const verdictTitle = document.getElementById("verdictTitle");
+      const verdictDesc = document.getElementById("verdictDesc");
+      const halalBadgeContainer = document.getElementById("halalBadgeContainer");
+
+      scoreValue.textContent = score;
+
+      let halalBadgeHTML = "";
+      if (hasHaram) {
+        halalBadgeHTML = `<div style="font-weight: 700; color: #e11d48; font-size: 0.9rem; margin-top: 4px;">${dict.halalNo}</div>`;
+      } else if (hasDoubtful) {
+        halalBadgeHTML = `<div style="font-weight: 700; color: #d97706; font-size: 0.9rem; margin-top: 4px;">${dict.halalDoubt}</div>`;
+      } else {
+        halalBadgeHTML = `<div style="font-weight: 700; color: #059669; font-size: 0.9rem; margin-top: 4px;">${dict.halalYes}</div>`;
+      }
+      halalBadgeContainer.innerHTML = halalBadgeHTML;
+
+      const calValue = document.getElementById("calValue");
+      const macrosValue = document.getElementById("macrosValue");
+      if (matchedProduct) {
+        calValue.textContent = matchedProduct.calories;
+        macrosValue.textContent = matchedProduct.macros;
+      } else {
+        calValue.textContent = score < 50 ? "410 ккал" : "180 ккал";
+        macrosValue.textContent = "Б: 4г | Ж: 12г | У: 28г";
+      }
+
+      if (score >= 80) {
+        scoreCircle.style.borderColor = "#10b981";
+        scoreCircle.style.color = "#10b981";
+        verdictBadge.style.background = "#d1fae5";
+        verdictBadge.style.color = "#065f46";
+        verdictBadge.textContent = dict.verdictCleanBadge;
+        verdictTitle.textContent = dict.verdictCleanTitle;
+        verdictDesc.textContent = dict.verdictCleanDesc;
+        currentVerdict = `${dict.verdictCleanBadge} (${score}/100)`;
+      } else if (score >= 45) {
+        scoreCircle.style.borderColor = "#f59e0b";
+        scoreCircle.style.color = "#f59e0b";
+        verdictBadge.style.background = "#fef3c7";
+        verdictBadge.style.color = "#92400e";
+        verdictBadge.textContent = dict.verdictWarnBadge;
+        verdictTitle.textContent = dict.verdictWarnTitle;
+        verdictDesc.textContent = dict.verdictWarnDesc;
+        currentVerdict = `${dict.verdictWarnBadge} (${score}/100)`;
+      } else {
+        scoreCircle.style.borderColor = "#e11d48";
+        scoreCircle.style.color = "#e11d48";
+        verdictBadge.style.background = "#ffe4e6";
+        verdictBadge.style.color = "#9f1239";
+        verdictBadge.textContent = dict.verdictDangerBadge;
+        verdictTitle.textContent = dict.verdictDangerTitle;
+        verdictDesc.textContent = dict.verdictDangerDesc;
+        currentVerdict = `${dict.verdictDangerBadge} (${score}/100)`;
+      }
+
+      document.getElementById("highlightedText").innerHTML = highlightedHTML;
+
+      const detailsBlock = document.getElementById("detailsBlock");
+      const ingredientsList = detailsBlock.querySelector(".details-grid") || document.getElementById("ingredientsList");
+      ingredientsList.innerHTML = "";
+
+      if (foundItems.length === 0) {
+        detailsBlock.classList.add("hidden");
+      } else {
+        detailsBlock.classList.remove("hidden");
+        foundItems.forEach((item) => {
+          const localized = item[currentLang];
+          const div = document.createElement("div");
+          div.className = `detail-item ${item.level}`;
+          div.innerHTML = `
+            <div class="detail-title">
+              <span>${localized.name}</span>
+              <span class="detail-tag">${localized.category}</span>
+            </div>
+            <div class="detail-desc">${localized.explanation}</div>
+          `;
+          ingredientsList.appendChild(div);
+        });
+      }
+
+      document.getElementById("alternativeText").textContent = suggestAlternative(rawText, score);
+      
+      // Сброс чата при новом анализе
+      aiMessages.innerHTML = `<div class="ai-msg bot">${dict.aiWelcome}</div>`;
+
+      if (shouldScroll) {
+        resultSection.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+
+    function suggestAlternative(text, score) {
+      const dict = I18N[currentLang];
+      const lower = text.toLowerCase();
+      if (score >= 80) return dict.altClean || "Замена не требуется.";
+      if (/йогурт|молоко|сүт|milk|yogurt/.test(lower)) return dict.altDairy;
+      if (/батончик|шоколад|печенье|мука|ұн|қант|chocolate|flour|bar/.test(lower)) return dict.altSweet;
+      if (/чипсы|картофел|картоп|снек|potato|chips|snack/.test(lower)) return dict.altSnack;
+      if (/газирован|кола|ортофосфор|carbonated|cola|soda/.test(lower)) return dict.altDrink;
+      return dict.altDefault;
+    }
+
+    // Логика ИИ-консультанта в чате
+    aiSendBtn.addEventListener("click", sendToAI);
+    aiInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendToAI();
+    });
+
+    function sendToAI() {
+      const question = aiInput.value.trim();
+      if (!question) return;
+
+      // Добавляем сообщение пользователя
+      const userMsg = document.createElement("div");
+      userMsg.className = "ai-msg user";
+      userMsg.textContent = question;
+      aiMessages.appendChild(userMsg);
+      aiInput.value = "";
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+
+      // Имитируем умный ответ ИИ с задержкой 0.5 сек
+      setTimeout(() => {
+        const botMsg = document.createElement("div");
+        botMsg.className = "ai-msg bot";
+        botMsg.textContent = generateAIResponse(question, lastAnalyzedText, currentScore);
+        aiMessages.appendChild(botMsg);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+      }, 500);
+    }
+
+    function generateAIResponse(q, text, score) {
+      const lowerQ = q.toLowerCase();
+      const lowerText = text.toLowerCase();
+
+      if (currentLang === "kz") {
+        if (/сақ|қант|sugar/.test(lowerQ)) {
+          return score < 50 ? "Иә, бұл өнімде қант пен жылдам көмірсулар өте көп, бұл қандағы қантты күрт көтереді." : "Бұл өнімде қант мөлшері қалыпты немесе жоқ.";
+        }
+        if (/бала|детям|child/.test(lowerQ)) {
+          return score < 50 ? "Құрамында химиялық қоспалар мен консерванттар болғандықтан, балаларға жиі беруге кеңес берілмейді." : "Құрамы қауіпсіз, балаларға жеуге болады.";
+        }
+        if (/пайда|здоров|diet/.test(lowerQ)) {
+          return `Өнімнің сапа бағасы 100-ден ${score} балл. ${score > 75 ? 'Денсаулыққа зияны жоқ.' : 'Тұрақты тұтынуға жарамсыз, баламасын таңдаған жөн.'}`;
+        }
+        return `Талдау нәтижесі бойынша бұл өнімнің көрсеткіші ${score}/100. Құрамындағы ингредиенттерді мұқият тексеріңіз.`;
+      } 
+      else if (currentLang === "en") {
+        if (/sugar|сахар/.test(lowerQ)) {
+          return score < 50 ? "Yes, this product contains significant added sugars or syrups that can cause glucose spikes." : "The sugar content in this product is relatively low or well-balanced.";
+        }
+        if (/kids|детям|child/.test(lowerQ)) {
+          return score < 50 ? "Due to processing and additives, it's better to limit or avoid giving this frequently to children." : "The ingredient profile is safe for children in moderation.";
+        }
+        if (/health|diet|полезно/.test(lowerQ)) {
+          return `Health score is ${score}/100. ${score > 75 ? 'This is a clean, safe choice.' : 'Consider healthier alternatives due to processing.'}`;
+        }
+        return `Based on the scanned composition (score ${score}/100), make sure to consume it in moderation as part of a balanced diet.`;
+      } 
+      else {
+        // Русский
+        if (/сахар|сладк|углевод/.test(lowerQ)) {
+          return score < 50 ? "Да, в составе обнаружены быстрые сахара или сиропы, которые могут вызывать резкие скачки энергии и инсулина." : "Количество сахара в этом продукте находится в пределах нормы или состав чистый.";
+        }
+        if (/ребенк|детям|детск|малыш/.test(lowerQ)) {
+          return score < 50 ? "Из-за глубокой переработки и добавок давать этот продукт детям на регулярной основе не рекомендуется." : "Состав относительно безопасный, можно давать детям в умеренных количествах.";
+        }
+        if (/полезн|зож|диета|фигур|весс/.test(lowerQ)) {
+          return `Оценка продукта составляет ${score из 100}. ${score > 75 ? 'Отличный выбор для здорового питания.' : 'Продукт ультрапереработанный, лучше ограничить его потребление.'}`;
+        }
+        if (/халяль|харам|свин/.test(lowerQ)) {
+          return /желатин свиной|кармин|алкоголь|спирт/.test(lowerText) ? "Внимание! Обнаружены компоненты со статусом Харам." : "Явных запрещенных компонентов (харам) в составе не найдено.";
+        }
+        return `Анализируя состав (оценка ${score}/100), могу сказать, что продукт лучше употреблять умеренно. Есть ли у вас конкретный вопрос по калориям или добавкам?`;
+      }
+    }
+
+    function saveToHistory(fullText, score) {
+      let history = JSON.parse(localStorage.getItem("label_decoder_pink_history") || "[]");
+      const shortLabel = fullText.length > 32 ? fullText.substring(0, 32) + "..." : fullText;
+      history = history.filter((item) => item.fullText !== fullText);
+      history.unshift({ label: shortLabel, fullText: fullText, score: score });
+      if (history.length > 5) history.pop();
+      localStorage.setItem("label_decoder_pink_history", JSON.stringify(history));
+      updateHistoryUI();
+    }
+
+    function updateHistoryUI() {
+      const history = JSON.parse(localStorage.getItem("label_decoder_pink_history") || "[]");
+      if (history.length === 0) {
+        historySection.style.display = "none";
+        return;
+      }
+      historySection.style.display = "block";
+      historyList.innerHTML = "";
+      history.forEach((item) => {
+        const chip = document.createElement("div");
+        chip.className = "history-chip";
+        chip.textContent = `${item.label} (${item.score}/100)`;
+        chip.addEventListener("click", () => {
+          ingredientsInput.value = item.fullText;
+          analyzeIngredients();
+        });
+        historyList.appendChild(chip);
+      });
+    }
+
+    newScanBtn.addEventListener("click", () => {
+      resultSection.classList.add("hidden");
+      ingredientsInput.value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    copyReportBtn.addEventListener("click", () => {
+      const dict = I18N[currentLang];
+      const report = `🌸 LabelDecoder\n${currentVerdict}\n${lastAnalyzedText}`;
+      navigator.clipboard.writeText(report).then(() => {
+        copyReportBtn.textContent = dict.copiedBtn;
+        setTimeout(() => (copyReportBtn.textContent = dict.copyBtn), 2000);
+      });
+    });
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, (tag) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+      }[tag]));
+    }
+  </script>
+</body>
+</html>
